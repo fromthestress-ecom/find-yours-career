@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Job Search</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">AJ</span><span>AI Job Search</span></div>
+  <nav id="tabs" role="tablist">
+    <button role="tab" data-view="overview" class="active">Tổng quan</button>
+    <button role="tab" data-view="search">Tìm việc</button>
+    <button role="tab" data-view="scanned">Tin đã quét</button>
+    <button role="tab" data-view="chat">Trợ lý</button>
+    <button role="tab" data-view="files">Tài liệu</button>
+  </nav>
+  <div id="envbadges" class="badges" aria-label="Trạng thái công cụ"></div>
+</header>
+
+<main>
+  <!-- Tổng quan -->
+  <section id="view-overview" class="view active">
+    <div id="banners"></div>
+    <div class="stats" id="stats"></div>
+    <div class="row-between">
+      <h2>Pipeline ứng tuyển</h2>
+      <button class="btn primary" id="addApp">+ Thêm đơn</button>
+    </div>
+    <div class="board" id="board"></div>
+    <p class="muted" id="boardEmpty" hidden>Chưa có đơn nào. Dùng <b>Trợ lý → /apply &lt;link tin&gt;</b> để soạn hồ sơ, hoặc thêm thủ công.</p>
+  </section>
+
+  <!-- Tìm việc -->
+  <section id="view-search" class="view">
+    <h2>Tìm việc trực tiếp</h2>
+    <div class="row-between">
+      <div class="chips" id="fieldChips" aria-label="Lĩnh vực"></div>
+      <div class="btn-group">
+        <button class="btn small" type="button" id="fieldsManage">Quản lý lĩnh vực</button>
+        <button class="btn small" type="button" id="fieldsToSetup" title="Gửi các lĩnh vực đã chọn sang Trợ lý để cập nhật truy vấn cho /scrape">Dùng cho /scrape →</button>
+      </div>
+    </div>
+    <p class="muted small" id="fieldHint">Chọn một hoặc nhiều lĩnh vực để tìm theo bộ từ khóa của lĩnh vực đó (bỏ chọn để tìm theo từ khóa tự nhập).</p>
+    <form id="searchForm" class="card form-grid">
+      <label>Nguồn
+        <select id="sPortal"></select>
+      </label>
+      <label>Từ khóa
+        <input id="sQuery" placeholder="vd: data engineer">
+      </label>
+      <label id="sLocationWrap">Địa điểm
+        <input id="sLocation" placeholder="vd: Ho Chi Minh City, Vietnam / Remote">
+      </label>
+      <label id="sJobageWrap">Đăng trong
+        <select id="sJobage">
+          <option value="">Tất cả</option><option value="1">1 ngày</option><option value="7">7 ngày</option>
+          <option value="14">14 ngày</option><option value="30">30 ngày</option>
+        </select>
+      </label>
+      <label id="sRemoteWrap">Hình thức
+        <select id="sRemote"><option value="">Bất kỳ</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">Tại chỗ</option></select>
+      </label>
+      <label>Số kết quả
+        <input id="sLimit" type="number" min="1" max="100" value="20">
+      </label>
+      <div class="form-actions"><button class="btn primary" id="sGo" type="submit">Tìm</button></div>
+    </form>
+    <p class="muted small">LinkedIn chỉ dùng cho cá nhân, số lượng thấp (xem điều khoản trong SKILL.md của từng nguồn).</p>
+    <div id="searchStatus" class="muted"></div>
+    <div id="searchResults" class="cards"></div>
+  </section>
+
+  <!-- Tin đã quét -->
+  <section id="view-scanned" class="view">
+    <div class="row-between">
+      <h2>Tin đã quét &amp; xếp hạng</h2>
+      <div class="btn-group">
+        <button class="btn" data-chat="/scrape" data-send="1">Quét tin mới (/scrape)</button>
+        <button class="btn" data-chat="/rank" data-send="1">Xếp hạng (/rank)</button>
+      </div>
+    </div>
+    <div class="filters">
+      <select id="jStatus"><option value="">Mọi trạng thái</option></select>
+      <input id="jFilter" placeholder="Lọc theo tên / công ty…">
+    </div>
+    <div id="jobsList" class="cards"></div>
+    <p class="muted" id="jobsEmpty" hidden>Chưa có tin nào. Chạy <b>/scrape</b> (cần hoàn tất <b>/setup</b> trước để có truy vấn tìm kiếm).</p>
+  </section>
+
+  <!-- Trợ lý -->
+  <section id="view-chat" class="view">
+    <div class="row-between">
+      <h2>Trợ lý Claude Code</h2>
+      <div class="btn-group">
+        <button class="btn" id="chatNew">Cuộc trò chuyện mới</button>
+      </div>
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip" data-chat="/setup" data-send="1">/setup</button>
+      <button class="chip" data-chat="/scrape" data-send="1">/scrape</button>
+      <button class="chip" data-chat="/rank" data-send="1">/rank</button>
+      <button class="chip" data-chat="/apply ">/apply &lt;link hoặc nội dung&gt;</button>
+      <button class="chip" data-chat="/outcome followup" data-send="1">/outcome followup</button>
+      <button class="chip" data-chat="/interview ">/interview &lt;công ty&gt;</button>
+      <button class="chip" data-chat="/upskill" data-send="1">/upskill</button>
+      <button class="chip" data-chat="/html-report" data-send="1">/html-report</button>
+    </div>
+    <div id="chatLog" class="chatlog" aria-live="polite"></div>
+    <form id="chatForm" class="chatform">
+      <textarea id="chatInput" rows="2" placeholder="Nhập lệnh hoặc trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+      <div class="chatbtns">
+        <button class="btn primary" id="chatSend" type="submit">Gửi</button>
+        <button class="btn danger" id="chatStop" type="button" hidden>Dừng</button>
+      </div>
+    </form>
+    <p class="muted small">Chạy ở chế độ không tương tác: sửa file trong repo được tự động chấp nhận, các lệnh khác ngoài danh sách cho phép sẽ bị từ chối và hiện ở cuối lượt trả lời.</p>
+  </section>
+
+  <!-- Tài liệu -->
+  <section id="view-files" class="view">
+    <h2>CV, thư xin việc &amp; hồ sơ đã tạo</h2>
+    <div class="files-layout">
+      <div id="fileList" class="filelist"></div>
+      <div class="preview">
+        <div id="previewHead" class="muted">Chọn một tệp để xem.</div>
+        <iframe id="previewFrame" title="Xem trước" hidden></iframe>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="appDialog">
+  <form method="dialog" id="appForm" class="dialog-body">
+    <h3 id="dTitle">Đơn ứng tuyển</h3>
+    <div class="form-grid">
+      <label>Công ty <input name="company" required></label>
+      <label>Vị trí <input name="role" required></label>
+      <label>Trạng thái <select name="status"></select></label>
+      <label>Fit (0-100) <input name="fit_rating" inputmode="numeric" pattern="\d{0,3}"></label>
+      <label>Hạn nộp <input name="deadline" type="date"></label>
+      <label>Kênh <input name="channel" placeholder="LinkedIn / email / website…"></label>
+      <label>Người liên hệ <input name="contact_person"></label>
+      <label>Nguồn (URL) <input name="source" type="url"></label>
+      <label class="wide">Ghi chú <textarea name="notes" rows="3"></textarea></label>
+    </div>
+    <p class="muted small">Dấu phẩy, ngoặc kép và xuống dòng được thay thế khi lưu vì tracker CSV của repo không dùng quoting.</p>
+    <p class="error" id="dError" hidden></p>
+    <div class="dialog-actions">
+      <button class="btn" value="cancel" formnovalidate>Đóng</button>
+      <button class="btn primary" id="dSave" value="save">Lưu</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="fieldsDialog">
+  <form method="dialog" id="fieldsForm" class="dialog-body">
+    <h3>Lĩnh vực công việc</h3>
+    <p class="muted small">Mỗi lĩnh vực là một bộ từ khóa (mỗi dòng một từ khóa, nên dùng cả tiếng Việt lẫn tiếng Anh nếu thị trường của bạn đăng tin bằng cả hai). Tick "IT" cho lĩnh vực công nghệ: freehire được tối ưu cho IT nên với lĩnh vực khác kết quả có thể ít hơn LinkedIn.</p>
+    <div id="fieldRows"></div>
+    <div class="dialog-actions" style="justify-content:space-between">
+      <div class="btn-group"><button class="btn" type="button" id="fieldAdd">+ Thêm lĩnh vực</button><button class="btn" type="button" id="fieldReset">Khôi phục mặc định</button></div>
+      <div class="btn-group"><button class="btn" value="cancel" formnovalidate>Đóng</button><button class="btn primary" value="save">Lưu</button></div>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>
